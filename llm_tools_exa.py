@@ -46,7 +46,6 @@ class ExaTools(llm.Toolbox):
             type="auto",
             include_domains=include_domains,
             text=True,
-            highlights=True,
         ).results
         output = []
         for result in results:
@@ -54,9 +53,6 @@ class ExaTools(llm.Toolbox):
             output.append(f"Author: {result.author}")
             output.append(f"URL: {result.url}")
             output.append(f"Published: {result.published_date}")
-            output.append("Highlights:")
-            for highlight in result.highlights:
-                output.append(f"- {highlight}")
             output.append(f"Text: {result.text}")
             output.append("---------\n")
         return "\n".join(output)
