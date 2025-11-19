@@ -39,6 +39,13 @@ llm -m claude-4-sonnet -T get_answer "What is the capital of France?"
 
 You can ask the model to include or omit citations, as desired.
 
+### get_contents
+Get the contents of a webpage as markdown:
+
+```bash
+llm -m claude-4-sonnet -T get_contents "What's on the homepage of nytimes.com
+```
+
 ## Development
 
 To set up this plugin locally, first checkout the code. Then create a new virtual environment:

@@ -91,9 +91,10 @@ class ExaTools(llm.Toolbox):
         )
         exa = Exa(exa_key)
         result = cast(
-            SearchResponse, exa.get_contents(urls=[url], text=True, context=True)
+            SearchResponse,
+            exa.get_contents(urls=[url], text=True, context=True),  # type: ignore
         )
-        return result.context
+        return result.context  # type: ignore
 
 
 @llm.hookimpl

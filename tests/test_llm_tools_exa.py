@@ -19,7 +19,6 @@ def mock_exa_result():
     result.author = "Test Author"
     result.url = "https://example.com"
     result.published_date = "2024-01-01"
-    result.highlights = ["Important highlight 1", "Important highlight 2"]
     result.text = "This is the full text content of the result."
     return result
 
@@ -57,7 +56,6 @@ def test_web_search_basic(mock_get_key, mock_exa_class, mock_exa_response, exa_t
         type="auto",
         include_domains=None,
         text=True,
-        highlights=True,
     )
 
     # Verify output format
@@ -65,8 +63,6 @@ def test_web_search_basic(mock_get_key, mock_exa_class, mock_exa_response, exa_t
     assert "Author: Test Author" in result
     assert "URL: https://example.com" in result
     assert "Published: 2024-01-01" in result
-    assert "- Important highlight 1" in result
-    assert "- Important highlight 2" in result
     assert "Text: This is the full text content of the result." in result
     assert "---------" in result
 
@@ -98,7 +94,6 @@ def test_web_search_with_parameters(
         type="auto",
         include_domains=["github.com", "stackoverflow.com"],
         text=True,
-        highlights=True,
     )
 
 
@@ -115,7 +110,6 @@ def test_web_search_multiple_results(mock_get_key, mock_exa_class, exa_tools):
     result1.author = "Author 1"
     result1.url = "https://example1.com"
     result1.published_date = "2024-01-01"
-    result1.highlights = ["Highlight 1"]
     result1.text = "Text 1"
 
     result2 = Mock()
@@ -123,7 +117,6 @@ def test_web_search_multiple_results(mock_get_key, mock_exa_class, exa_tools):
     result2.author = "Author 2"
     result2.url = "https://example2.com"
     result2.published_date = "2024-01-02"
-    result2.highlights = ["Highlight 2", "Another highlight"]
     result2.text = "Text 2"
 
     mock_response = Mock()
@@ -193,7 +186,6 @@ def test_web_search_valid_categories(
         type="auto",
         include_domains=None,
         text=True,
-        highlights=True,
     )
 
 
@@ -327,3 +319,79 @@ def test_get_answer_citations_false(
     assert "Citation:" not in result
     assert "URL:" not in result
     assert "Published:" not in result
+
+
+@pytest.fixture
+def mock_contents_response():
+    """Mock Exa get_contents API response."""
+    response = Mock()
+    response.context = (
+        "# Example Article\n\nThis is the markdown content of the webpage."
+    )
+    return response
+
+
+@patch("llm_tools_exa.Exa")
+@patch("llm_tools_exa.llm.get_key")
+def test_get_contents_basic(
+    mock_get_key, mock_exa_class, mock_contents_response, exa_tools
+):
+    """Test basic get_contents functionality."""
+    # Setup mocks
+    mock_get_key.return_value = "test_api_key"
+    mock_exa_instance = Mock()
+    mock_exa_instance.get_contents.return_value = mock_contents_response
+    mock_exa_class.return_value = mock_exa_instance
+
+    # Call function
+    result = exa_tools.get_contents("https://example.com")
+
+    # Verify API calls
+    mock_get_key.assert_called_once_with(
+        explicit_key="exa", key_alias="exa", env_var="EXA_API_KEY"
+    )
+    mock_exa_class.assert_called_once_with("test_api_key")
+    mock_exa_instance.get_contents.assert_called_once_with(
+        urls=["https://example.com"], text=True, context=True
+    )
+
+    # Verify output
+    assert result == "# Example Article\n\nThis is the markdown content of the webpage."
+
+
+@patch("llm_tools_exa.Exa")
+@patch("llm_tools_exa.llm.get_key")
+def test_get_contents_different_url(mock_get_key, mock_exa_class, exa_tools):
+    """Test get_contents with a different URL."""
+    mock_get_key.return_value = "test_api_key"
+    mock_exa_instance = Mock()
+
+    mock_response = Mock()
+    mock_response.context = "Different webpage content here."
+    mock_exa_instance.get_contents.return_value = mock_response
+    mock_exa_class.return_value = mock_exa_instance
+
+    result = exa_tools.get_contents("https://different-site.com/article")
+
+    # Verify correct URL was passed
+    mock_exa_instance.get_contents.assert_called_once_with(
+        urls=["https://different-site.com/article"], text=True, context=True
+    )
+    assert result == "Different webpage content here."
+
+
+@patch("llm_tools_exa.Exa")
+@patch("llm_tools_exa.llm.get_key")
+def test_get_contents_empty_content(mock_get_key, mock_exa_class, exa_tools):
+    """Test get_contents with empty content."""
+    mock_get_key.return_value = "test_api_key"
+    mock_exa_instance = Mock()
+
+    mock_response = Mock()
+    mock_response.context = ""
+    mock_exa_instance.get_contents.return_value = mock_response
+    mock_exa_class.return_value = mock_exa_instance
+
+    result = exa_tools.get_contents("https://empty-page.com")
+
+    assert result == ""
