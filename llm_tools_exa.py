@@ -2,7 +2,7 @@ from typing import Literal, Optional, cast
 
 import llm
 from exa_py import Exa
-from exa_py.api import AnswerResponse
+from exa_py.api import AnswerResponse, SearchResponse
 
 
 class ExaTools(llm.Toolbox):
@@ -77,10 +77,29 @@ class ExaTools(llm.Toolbox):
                 output.append(f"Published: {citation.published_date}")
         return "\n".join(output)
 
+    def get_contents(self, url: str) -> str:
+        """Get the contents of a webpage in text format.
+
+        Args:
+            url: The URL to summarize.
+
+        Returns:
+            The contents of the website as markdown.
+        """
+        exa_key = llm.get_key(
+            explicit_key="exa", key_alias="exa", env_var="EXA_API_KEY"
+        )
+        exa = Exa(exa_key)
+        result = cast(
+            SearchResponse, exa.get_contents(urls=[url], text=True, context=True)
+        )
+        return result.context
+
 
 @llm.hookimpl
 def register_tools(register):
     exa_tools = ExaTools()
     register(exa_tools.web_search, "web_search")
     register(exa_tools.get_answer, "get_answer")
+    register(exa_tools.get_contents, "get_contents")
     register(ExaTools, "Exa")
